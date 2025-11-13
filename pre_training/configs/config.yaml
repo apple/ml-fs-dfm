@@ -1,0 +1,107 @@
+defaults:
+  - _self_
+  - override hydra/launcher: submitit_slurm
+
+compute:
+  ngpus: 8
+  nodes: 1
+
+logging:
+  log_freq: 400
+  log_lr_every: 6000
+  log_file_name: stdout.log
+  enable_wandb: False
+  entity: flows
+  project: flow_matching
+  group: null
+
+data:
+  train: fineweb-edu # [wikitext103, fineweb-edu]
+  valid: wikitext103
+  cache_dir: /mnt/task_wrapper/user_output/cache_dir
+  num_workers: 8
+  small_data: False
+  force_process: False
+  hf_dataset: True
+
+training:
+  batch_size: 128
+  snapshot: 5000
+  eval_freq: 2000
+  perplexity_freq: 10000
+  eval_multi_freq: 10000000000
+  seed: 42
+  pre_trained_model: model/checkpoint.pth
+  use_pre_train: True
+
+eval:
+  batch_size: 16
+  sample_batch_size: 8
+  perplexity: True
+  perplexity_batch_size: 8
+
+optim:
+  weight_decay: 0.03
+  optimizer: AdamW
+  lr: 3e-4
+  beta1: 0.9
+  beta2: 0.95
+  eps: 1e-8
+  warmup: 10000
+  grad_clip: 1.
+  eta_min_ratio: 0.1
+  fused: false
+  n_iters: 1000000
+  log_lr_every: 200
+
+flow:
+  source_distribution: uniform  # [uniform, mask]
+  loss_function: generalized_kl  # [cross_entropy, generalized_kl]
+  exponent: 1.
+  scheduler_type: polynomial
+  sampling_steps: 1024
+
+model:
+  hidden_size: 768
+  cond_dim: 128
+  length: 1024
+  n_blocks: 12
+  n_heads: 12
+  dropout: 0.1
+  compile: true
+
+# model:
+#   hidden_size: 2048
+#   cond_dim: 256
+#   length: 1024
+#   n_blocks: 21
+#   n_heads: 32
+#   dropout: 0.1
+#   compile: true
+
+# model:
+#   hidden_size: 2048
+#   cond_dim: 256
+#   length: 1024
+#   n_blocks: 28
+#   n_heads: 32
+#   dropout: 0.1
+#   compile: true
+
+hydra_dir: /output/hydra 
+
+hydra:
+  run:
+    dir: ${hydra_dir}/output/results
+  sweep:
+    dir: ${hydra_dir}/output/results
+    subdir: ${hydra.job.num}
+  launcher:
+    max_num_timeout: 100000
+    timeout_min: 4320
+    partition: learn
+    qos: # TODO: change it to your own qos
+    gpus_per_node: ${compute.ngpus}
+    mem_gb: 1760
+    cpus_per_task: 12
+    nodes: ${compute.nodes}

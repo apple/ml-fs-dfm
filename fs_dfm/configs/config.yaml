@@ -1,0 +1,120 @@
+defaults:
+  - _self_
+  - override hydra/launcher: submitit_slurm
+
+compute:
+  ngpus: 8
+  nodes: 1
+
+logging:
+  log_freq: 500
+  log_lr_every: 5000
+  log_file_name: stdout.log
+  enable_wandb: False
+  entity: flows
+  project: flow_matching
+  group: null
+
+data:
+  train: fineweb-edu # [wikitext103, fineweb-edu]
+  valid: wikitext103
+  cache_dir: /mnt/task_wrapper/user_output/cache_dir
+  num_workers: 8
+  #FIXME
+  #small_data: False
+  small_data: True
+  force_process: False
+  hf_dataset: True
+
+training:
+  batch_size: 96
+  # batch_size: 32
+  # batch_size: 16
+  snapshot: 5000
+  eval_freq: 10000
+  perplexity_freq: 10000
+  eval_multi_freq: 5000
+  seed: 42
+  train_teacher: True
+  train_student: True
+  teacher_type: RK_4  # [heun_average, RK_4]
+  pre_trained_model: model/checkpoint.pth
+  precision: bf16        # [fp32, fp16, bf16]
+  use_grad_scaler: False # true only for fp16
+  unmask_change: False   # [True, False]
+  teacher_cut_off: False
+  teacher_cut_off_it: 0
+  controlled_unmasking: False
+  controlled_unmasking_type: Training_Testing # [Training_Testing, Testing, Training]
+  blend_logits: False
+  can_apply_dt: True
+  use_generator_not_logic: False
+  use_ema: True
+  ema_decay: 0.9995
+  ema_copy_buffers: True
+  ema_freq: 1
+  just_student: True
+  result_len: 10
+
+eval:
+  batch_size: 64
+  sample_batch_size: 16
+  perplexity: True
+  perplexity_batch_size: 16
+
+optim:
+  weight_decay: 0.03
+  optimizer: AdamW
+  lr: 1e-5
+  teacher_lr: 1e-6
+  beta1: 0.9
+  beta2: 0.95
+  eps: 1e-8
+  warmup: 10000
+  grad_clip: 1.
+  eta_min_ratio: 0.1
+  fused: false
+  n_iters: 500000
+  log_lr_every: 500
+  constant_lr: False
+
+flow:
+  source_distribution: mask  # [uniform, mask]
+  teacher_loss_function: cross_entropy  # [cross_entropy, generalized_kl]
+  student_loss_function: KLDistillation  # [cross_entropy, generalized_kl, adaptive_ce_kl, KLDistillation]
+  temperature: 1.0
+  exponent: 1.
+  student_solver: mixture_euler_with_cumulative_scalar # ['mixture_euler', 'mixture_euler_with_cumulative_scalar']
+  scheduler_type: polynomial
+  sampling_steps: 1024
+  step_sizes: [1.0, 5e-1, 2.5e-1, 1.25e-1, 6.25e-2, 3.125e-2, 1.5625e-2, 7.8125e-3, 3.90625e-3, 1.953125e-3, 9.765625e-4]
+  dt_weights:  [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]
+  dt_weights_2: False
+  dt_weights_2_freq: 20000
+
+model:
+  hidden_size: 768
+  cond_dim: 128
+  length: 1024
+  n_blocks: 12
+  n_heads: 12
+  dropout: 0.1
+  compile: true
+
+hydra_dir: /mnt/task_wrapper/user_output/artifacts
+
+hydra:
+  run:
+    dir: ${hydra_dir}/output/results
+  sweep:
+    dir: ${hydra_dir}/output/results
+    subdir: ${hydra.job.num}
+  launcher:
+    max_num_timeout: 100000
+    timeout_min: 4320
+    partition: learn
+    qos: # TODO: change it to your own qos
+    gpus_per_node: ${compute.ngpus}
+    mem_gb: 1760
+    cpus_per_task: 8
+    nodes: ${compute.nodes}
