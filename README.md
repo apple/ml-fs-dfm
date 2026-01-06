@@ -46,6 +46,18 @@ conda activate FSDFM
 pip install -e .
 ```
 
+## Checkpoints
+
+We provide pretrained checkpoints hosted on Apple’s ML Research. These can be used to (1) initialize training/fine-tuning and (2) run evaluation via `fs_dfm/run_eval.py` using `--pre_trained_model_path` (see example below).
+
+| Model | Size | Source | Notes | URL |
+|---|---:|---|---|---|
+| FS-DFM | 1.3B | uniform | RK4 teacher distilled | [Download](https://ml-site.cdn-apple.com/models/fs-dfm/checkpoint_step_190000.pth)  |
+| DFM | 1.3B | uniform | DFM pretrained initialization | [Download](https://ml-site.cdn-apple.com/models/fs-dfm/checkpoint.pth) |
+
+
+
+
 ## Usage
 
 ### Training
@@ -70,7 +82,6 @@ python fs_dfm/run_eval.py \
     --perplexity_n_samples 320 \
     --eval_elbo \
     --eval_perplexity \
-    --do_dynamic_step \
     --pre_trained_model_path "/path/to/checkpoint.pth"
 ```
 
